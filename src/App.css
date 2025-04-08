@@ -1,3 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @plugin "daisyui";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

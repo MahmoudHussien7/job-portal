@@ -7,7 +7,7 @@ import Pagination from "../Components/Pagination";
 
 const HomePage = () => {
   return (
-    <div className="bg-gray-50">
+    <div className="bg-gray-50  ">
       <Hero />
       <TrustedCompanies />
       <div className="max-w-7xl mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-4 gap-8">
