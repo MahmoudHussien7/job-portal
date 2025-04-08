@@ -47,7 +47,10 @@ function Navbar() {
           </li>
           <li>
             {!isLoggedin ? (
-              <Link to="/login" className="hover:text-violet-500">
+              <Link
+                to="/login"
+                className="text-MainColor hover:text-HoverColor"
+              >
                 Login
               </Link>
             ) : (

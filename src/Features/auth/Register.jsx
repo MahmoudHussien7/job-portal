@@ -167,7 +167,7 @@ const Register = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2 px-4 bg-[#B48E61] text-white font-semibold rounded-md shadow-md hover:bg-mainColor-light transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-mainColor"
+              className=" cursor-pointer w-full py-2 px-4 bg-MainColor text-white font-semibold rounded-md shadow-md hover:bg-HoverColor transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 "
             >
               {loading ? "Registering..." : "Sign up"}
             </button>
@@ -179,7 +179,7 @@ const Register = () => {
             Already have an account?
             <Link
               to="/login"
-              className="ml-1 text-mainColor hover:text-mainColor font-montserrat transition-colors"
+              className="ml-1 text-MainColor hover:text-HoverColor font-montserrat transition-colors"
             >
               Sign in
             </Link>

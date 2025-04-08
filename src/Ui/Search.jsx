@@ -53,7 +53,7 @@ const SearchBar = () => {
       </div>
 
       {/* Search Button */}
-      <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full font-medium whitespace-nowrap">
+      <button className="bg-MainColor hover:bg-HoverColor cursor-pointer text-white px-6 py-2 rounded-full font-medium whitespace-nowrap">
         Search
       </button>
     </div>
