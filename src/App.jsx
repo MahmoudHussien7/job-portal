@@ -11,39 +11,41 @@ import Register from "./Features/auth/Register";
 import { ToastContainer } from "react-toastify";
 import AuthListener from "./Features/auth/AuthListener";
 
-function App() {
-  const router = createBrowserRouter([
-    {
-      element: <AppLayout />,
-      errorElement: <Error />,
 
-      children: [
-        {
-          path: "/",
-          element: <Home />,
-        },
-        {
-          path: "/jobs",
-          element: <JobDetailes />,
-        },
-        {
-          path: "/login",
-          element: <LoginForm />,
-        },
-        {
-          path: "/signup",
-          element: <Register />,
-        },
-      ],
-    },
-  ]);
+function App() {
+  // const router = createBrowserRouter([
+  //   {
+  //     element: <AppLayout />,
+  //     errorElement: <Error />,
+
+  //     children: [
+  //       {
+  //         path: "/",
+  //         element: <Home />,
+  //       },
+  //       {
+  //         path: "/jobs",
+  //         element: <JobDetailes />,
+  //       },
+  //       {
+  //         path: "/login",
+  //         element: <LoginForm />,
+  //       },
+  //       {
+  //         path: "/signup",
+  //         element: <Register />,
+  //       },
+  //     ],
+  //   },
+  // ]);
   return (
     <>
-      <Provider store={store}>
+      {/* <Provider store={store}>
         <RouterProvider router={router} />
         <ToastContainer />
         <AuthListener />
-      </Provider>
+      </Provider> */}
+      <JobDetailes />
     </>
   );
 }
