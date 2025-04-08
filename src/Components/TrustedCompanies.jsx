@@ -7,7 +7,16 @@ export default function TrustedCompanies() {
   return (
     <div className="bg-white py-4 px-6 shadow flex justify-center gap-6 items-center">
       {logos.map((logo) => (
-        <img key={logo.name} src={logo.src} alt={logo.name} className="h-8" />
+        <img
+          key={logo.name}
+          src={logo.src}
+          alt={logo.name}
+          className="h-8"
+          placeholder="blur"
+          loading="lazy"
+          width={100}
+          height={100}
+        />
       ))}
     </div>
   );

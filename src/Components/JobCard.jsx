@@ -6,6 +6,10 @@ export default function JobCard() {
           src="https://cdn-icons-png.flaticon.com/512/5968/5968381.png"
           alt="Logo"
           className="w-10 h-10"
+          width={40}
+          height={40}
+          loading="lazy"
+          placeholder="blur"
         />
         <h3 className="ml-4 text-lg font-bold text-blue-700">
           Full stack developer

@@ -1,12 +1,7 @@
 @import "tailwindcss";
-@import "tw-animate-css";
 @plugin "daisyui";
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 @theme {
   --color-MainColor: #211c84;
   --color-HoverColor: #7a73d1;
-  --color-AccentColor: #ff5722;
 }
