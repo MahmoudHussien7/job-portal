@@ -20,8 +20,6 @@ function App() {
           path: "/jobs",
           element: <JobDetailes />,
         },
-        
-
       ],
     },
   ]);
