@@ -1,9 +1,10 @@
-export default function JobCard() {
+// JobCard.jsx
+export default function JobCard({ job }) {
   return (
     <div className="bg-white shadow-md rounded-lg p-4">
       <div className="flex items-center mb-4">
         <img
-          src="https://cdn-icons-png.flaticon.com/512/5968/5968381.png"
+          src={job.imgSrc}
           alt="Logo"
           className="w-10 h-10"
           width={40}
@@ -11,17 +12,12 @@ export default function JobCard() {
           loading="lazy"
           placeholder="blur"
         />
-        <h3 className="ml-4 text-lg font-bold text-blue-700">
-          Full stack developer
-        </h3>
+        <h3 className="ml-4 text-lg font-bold text-blue-700">{job.title}</h3>
       </div>
-      <p className="text-sm text-gray-600">California, USA</p>
-      <p className="text-sm text-gray-500 mt-2">
-        You will be responsible for frontend and backend development...
-      </p>
+      <p className="text-sm text-gray-600">{job.location}</p>
       <div className="mt-4 flex gap-2">
         <button className="btn btn-primary btn-sm">Apply now</button>
-        <button className="btn btn-outline btn-sm">Learn more</button>
+        <button  className="btn btn-outline btn-sm">Learn more</button>
       </div>
     </div>
   );
