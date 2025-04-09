@@ -1,4 +1,3 @@
-// Features/auth/AuthListener.jsx
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { setUser, clearUser, fetchUserData } from "./authSlice";
@@ -11,8 +10,17 @@ function AuthListener() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        dispatch(setUser(user));
-        dispatch(fetchUserData(user.uid)); // هات بياناته من Firestore مثلاً
+        dispatch(fetchUserData(user.uid))
+          .unwrap()
+          .then((result) => {
+            dispatch(
+              setUser({ firebaseUser: user, userData: result.userData })
+            );
+          })
+          .catch((error) => {
+            console.error("Failed to fetch user data:", error);
+            dispatch(clearUser());
+          });
       } else {
         dispatch(clearUser());
       }

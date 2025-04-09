@@ -1,154 +1,161 @@
-"use server";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { loginUser } from "../auth/authSlice";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import Register from "./Register";
+import LoadingSpinner from "../../Ui/Loader";
 
 const Login = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false); // Add loading state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { userData, isAuthenticated } = useSelector((state) => state.auth);
 
   const {
     register,
     handleSubmit,
-    formState: { errors },
-  } = useForm();
+    formState: { errors, isValid },
+  } = useForm({ mode: "onChange" });
 
-  const onSubmit = async (data) => {
-    setLoading(true);
+  // Redirect based on user role
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const redirectPath = userData?.role === "admin" ? "/dashboard" : "/";
+    const welcomeMessage =
+      userData?.role === "admin" ? "Welcome back, Admin!" : "Login successful!";
+
+    toast.success(welcomeMessage, { position: "bottom-right" });
+    navigate(redirectPath);
+  }, [isAuthenticated, userData, navigate]);
+
+  const onSubmit = async ({ userEmail, password }) => {
+    if (!isValid) return;
+
+    setIsSubmitting(true);
     try {
-      const result = await dispatch(
-        loginUser({
-          userEmail: data.userEmail,
-          password: data.password,
-        })
-      ).unwrap(); // Ensure unwrap is used to handle async action results
-
-      // Handle successful login
-      if (result.role === "admin") {
-        toast.success("Welcome back, Admin!", {
-          position: "bottom-right",
-        });
-        navigate("/dashboard");
-      } else {
-        toast.success("Login successful!", {
-          position: "bottom-right",
-        });
-        navigate("/");
-      }
+      await dispatch(loginUser({ userEmail, password })).unwrap();
     } catch (error) {
-      // Handle errors based on error codes
-      const errorMsg =
-        error.code === "auth/user-not-found"
-          ? "User not found. Please check your email."
-          : error.code === "auth/wrong-password"
-          ? "Incorrect password. Please try again."
-          : "An unexpected error occurred. Please try again later.";
-
-      toast.error(errorMsg, {
-        position: "bottom-right",
-      });
+      const errorMsg = getAuthErrorMessage(error.code);
+      toast.error(errorMsg, { position: "bottom-right" });
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
+  const getAuthErrorMessage = (errorCode) => {
+    const errorMessages = {
+      "auth/user-not-found": "User not found. Please check your email.",
+      "auth/wrong-password": "Incorrect password. Please try again.",
+      "auth/too-many-requests":
+        "Account temporarily disabled due to too many failed attempts.",
+      default: "An unexpected error occurred. Please try again later.",
+    };
+    return errorMessages[errorCode] || errorMessages.default;
+  };
+
   return (
-    <div className="flex items-center justify-center  overflow-hidden ">
-      <div className="w-full max-w-md px-8 py-10 bg-white rounded-lg shadow-lg">
-        <div className="flex justify-center items-center gap-3 mb-6">
-          <h1 className="text-3xl font-semibold text-gray-700">Sign in</h1>
-        </div>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <div>
-            <label
-              htmlFor="userEmail"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Email Address
-            </label>
-            <input
-              id="userEmail"
-              name="userEmail"
-              type="email"
-              {...register("userEmail", {
-                required: "Email Address is required",
-                pattern: {
-                  value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-                  message: "Invalid email address",
-                },
-              })}
-              className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:border-mainColor focus:ring-1 focus:ring-mainColor transition-colors ${
-                errors.userEmail ? "border-red-500" : ""
-              }`}
-              aria-label="Email Address"
-              aria-required="true"
-            />
-            {errors.userEmail && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.userEmail.message}
-              </p>
-            )}
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="w-full max-w-md bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="p-8">
+          <div className="text-center mb-8">
+            <h1 className="text-2xl font-bold text-gray-800">Welcome Back</h1>
+            <p className="text-gray-600">Sign in to your account</p>
           </div>
 
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              {...register("password", {
-                required: "Password is required",
-                minLength: {
-                  value: 6,
-                  message: "Password must be at least 6 characters long",
-                },
-              })}
-              className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:border-mainColor focus:ring-1 focus:ring-mainColor transition-colors ${
-                errors.password ? "border-red-500" : ""
-              }`}
-              aria-label="Password"
-              aria-required="true"
-            />
-            {errors.password && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.password.message}
-              </p>
-            )}
-          </div>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {/* Email Field */}
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Email Address
+              </label>
+              <input
+                id="email"
+                type="email"
+                {...register("userEmail", {
+                  required: "Email is required",
+                  pattern: {
+                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                    message: "Please enter a valid email",
+                  },
+                })}
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  errors.userEmail ? "border-red-500" : "border-gray-300"
+                }`}
+                disabled={isSubmitting}
+              />
+              {errors.userEmail && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.userEmail.message}
+                </p>
+              )}
+            </div>
 
-          <div>
+            {/* Password Field */}
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Password
+                </label>
+                <Link
+                  to="/forgot-password"
+                  className="text-sm text-blue-600 hover:text-blue-500"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+              <input
+                id="password"
+                type="password"
+                {...register("password", {
+                  required: "Password is required",
+                  minLength: {
+                    value: 6,
+                    message: "Password must be at least 6 characters",
+                  },
+                })}
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  errors.password ? "border-red-500" : "border-gray-300"
+                }`}
+                disabled={isSubmitting}
+              />
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.password.message}
+                </p>
+              )}
+            </div>
+
+            {/* Submit Button */}
             <button
               type="submit"
-              className="cursor-pointer w-full py-2 px-4 bg-MainColor text-white font-semibold rounded-md shadow-md hover:bg-HoverColor transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-mainColor"
-              disabled={loading} // Disable button while loading
+              disabled={isSubmitting || !isValid}
+              className={`w-full py-2 px-4 rounded-lg font-medium text-white ${
+                isSubmitting
+                  ? "bg-blue-400 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700"
+              } transition-colors`}
             >
-              {loading ? "Loading..." : "Sign in"} {/* Display loading text */}
+              {isSubmitting ? <LoadingSpinner size="small" /> : "Sign In"}
             </button>
-          </div>
-        </form>
+          </form>
 
-        <div className="text-center mt-6">
-          <p className="text-sm text-gray-500">
-            Don’t have an account?
+          <div className="mt-6 text-center text-sm text-gray-600">
+            Don't have an account?{" "}
             <Link
-              to="/signup"
-              state={{ from: "login" }} // Pass state to register page
-              className="ml-1 text-mainColor hover:text-mainColor font-montserrat transition-colors"
+              to="/register"
+              className="font-medium text-blue-600 hover:text-blue-500"
             >
               Sign up
             </Link>
-          </p>
+          </div>
         </div>
       </div>
     </div>

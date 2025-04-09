@@ -15,14 +15,14 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import { auth, db } from "../../Firebase/Config";
-import { createCookieSessionStorage } from "react-router-dom";
 
-// --- ASYNC ACTIONS ---
-
-// Register user
+// --- Async Thunks ---
 export const registerUser = createAsyncThunk(
   "auth/registerUser",
-  async ({ userEmail, password, userName, role }, { rejectWithValue }) => {
+  async (
+    { userEmail, password, userName, role = "user" },
+    { rejectWithValue }
+  ) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(
         auth,
@@ -30,54 +30,60 @@ export const registerUser = createAsyncThunk(
         password
       );
       const user = userCredential.user;
-      const userId = user.uid;
-
-      const userDetails = {
+      const userData = {
         userName,
         userEmail,
-        userId,
-        cartProducts: [],
-        favoriteProducts: [],
-        role: role || "user",
+        userId: user.uid,
+        role,
         createdAt: new Date().toISOString(),
       };
-
-      await setDoc(doc(db, "users", userId), userDetails);
-      return { user, userDetails };
+      await setDoc(doc(db, "users", user.uid), userData);
+      return { firebaseUser: user, userData };
     } catch (error) {
       return rejectWithValue(error.message);
     }
   }
 );
 
+// export const loginUser = createAsyncThunk(
+//   "auth/loginUser",
+//   async ({ userEmail, password }, { rejectWithValue }) => {
+//     try {
+//       await setPersistence(auth, browserLocalPersistence);
+//       const userCredential = await signInWithEmailAndPassword(
+//         auth,
+//         userEmail,
+//         password
+//       );
+//       const user = userCredential.user;
+//       const userDoc = await getDoc(doc(db, "users", user.uid));
+
+//       if (!userDoc.exists()) {
+//         throw new Error("User data not found!");
+//       }
+
+//       const userData = userDoc.data();
+//       return { user, userData };
+//     } catch (error) {
+//       return rejectWithValue(error.message);
+//     }
+//   }
+// );
 export const loginUser = createAsyncThunk(
   "auth/loginUser",
   async ({ userEmail, password }, { rejectWithValue }) => {
     try {
-      // Set persistence to ensure the user remains logged in across sessions
       await setPersistence(auth, browserLocalPersistence);
-
       const userCredential = await signInWithEmailAndPassword(
         auth,
         userEmail,
         password
       );
       const user = userCredential.user;
-
-      const docRef = doc(db, "users", user.uid);
-      const docSnap = await getDoc(docRef);
-
-      if (docSnap.exists()) {
-        const userDetails = docSnap.data();
-        createCookieSessionStorage.setItem(
-          "user",
-          JSON.stringify({ user, userDetails })
-        );
-
-        return { user, userDetails };
-      } else {
-        return rejectWithValue("User document does not exist");
-      }
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      if (!userDoc.exists()) throw new Error("User data not found!");
+      const userData = userDoc.data();
+      return { firebaseUser: user, userData };
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -88,66 +94,51 @@ export const logoutUser = createAsyncThunk("auth/logoutUser", async () => {
   await signOut(auth);
 });
 
-export const fetchUsers = createAsyncThunk(
-  "auth/fetchUsers",
-  async (_, { rejectWithValue }) => {
-    try {
-      const usersCollection = collection(db, "users");
-      const usersSnapshot = await getDocs(usersCollection);
-      const usersList = usersSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      return usersList;
-    } catch (error) {
-      return rejectWithValue(error.message);
-    }
-  }
-);
-// Fetch specific user data by UID
 export const fetchUserData = createAsyncThunk(
   "auth/fetchUserData",
   async (uid, { rejectWithValue }) => {
     try {
-      const docRef = doc(db, "users", uid);
-      const docSnap = await getDoc(docRef);
-
-      if (docSnap.exists()) {
-        const userDetails = docSnap.data();
-        return { userDetails };
-      } else {
-        return rejectWithValue("User document does not exist");
-      }
+      const userDoc = await getDoc(doc(db, "users", uid));
+      if (!userDoc.exists()) throw new Error("User not found!");
+      return { userData: userDoc.data() };
     } catch (error) {
       return rejectWithValue(error.message);
     }
   }
 );
 
-// Update user details
+export const fetchUsers = createAsyncThunk(
+  "auth/fetchUsers",
+  async (_, { rejectWithValue }) => {
+    try {
+      const usersSnapshot = await getDocs(collection(db, "users"));
+      return usersSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 export const updateUser = createAsyncThunk(
   "auth/updateUser",
   async (userData, { rejectWithValue, getState }) => {
     try {
-      const { userDetails } = getState().auth;
-      if (!userDetails) throw new Error("User not authenticated");
+      const { user } = getState().auth;
+      if (!user) throw new Error("User not authenticated");
 
-      await setDoc(doc(db, "users", userDetails.userId), userData, {
-        merge: true,
-      });
+      await setDoc(doc(db, "users", user.uid), userData, { merge: true });
       return userData;
     } catch (error) {
       return rejectWithValue(error.message);
     }
   }
 );
-// Delete user
+
 export const deleteUser = createAsyncThunk(
   "auth/deleteUser",
   async (userId, { rejectWithValue }) => {
     try {
-      const userDocRef = doc(db, "users", userId);
-      await deleteDoc(userDocRef);
+      await deleteDoc(doc(db, "users", userId));
       return userId;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -155,14 +146,13 @@ export const deleteUser = createAsyncThunk(
   }
 );
 
-// --- SLICE ---
-
+// --- Slice ---
 const initialState = {
   user: null,
-  isLoading: false,
+  userData: null, // تم دمج userDetails و role هنا
+  isLoading: true,
+  isAuthenticated: false,
   error: null,
-  userDetails: null,
-  role: null,
   users: [],
 };
 
@@ -170,94 +160,62 @@ const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    setUser(state, action) {
-      state.user = action.payload;
+    setUser: (state, action) => {
+      state.user = action.payload.firebaseUser;
+      state.userData = action.payload.userData;
+      state.isAuthenticated = true;
+      state.isLoading = false;
     },
-    clearUser(state) {
+    clearUser: (state) => {
       state.user = null;
-      state.userDetails = null;
+      state.userData = null;
+      state.isAuthenticated = false;
+      state.isLoading = false;
     },
   },
   extraReducers: (builder) => {
     builder
-      // Register user
-      .addCase(registerUser.pending, (state) => {
-        state.isLoading = true;
-      })
-      .addCase(registerUser.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.user = action.payload.user;
-        state.userDetails = action.payload.userDetails;
-        state.role = action.payload.userDetails.role;
-      })
-      .addCase(registerUser.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload;
-      })
+      // معالجة الحالات العامة
 
-      // Login
-      .addCase(loginUser.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
+      // حالات محددة
+      .addCase(registerUser.fulfilled, (state, action) => {
+        state.user = action.payload.user;
+        state.userData = action.payload.userData;
+        state.isAuthenticated = true;
       })
       .addCase(loginUser.fulfilled, (state, action) => {
-        state.isLoading = false;
         state.user = action.payload.user;
-        state.userDetails = action.payload.userDetails;
-        state.role = action.payload.userDetails.role;
-      })
-      .addCase(loginUser.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload;
-      })
-
-      // Logout
-      .addCase(logoutUser.fulfilled, (state) => {
-        state.user = null;
-        state.isLoading = false;
-        state.error = null;
-      })
-      // Fetch user data
-      .addCase(fetchUserData.pending, (state) => {
-        state.isLoading = true;
+        state.userData = action.payload.userData || { role: "user" }; // قيمة افتراضية
+        state.isAuthenticated = true;
       })
       .addCase(fetchUserData.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.userDetails = action.payload.userDetails;
-        state.role = action.payload.userDetails.role;
-      })
-      .addCase(fetchUserData.rejected, (state) => {
+        state.userData = action.payload.userData;
+        state.isAuthenticated = true;
         state.isLoading = false;
       })
-      // Fetch all users
       .addCase(fetchUsers.fulfilled, (state, action) => {
         state.users = action.payload;
       })
-      .addCase(fetchUsers.rejected, (state, action) => {
-        state.error = action.payload;
-      })
-
-      // Update user
-      .addCase(updateUser.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
       .addCase(updateUser.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.userDetails = { ...state.userDetails, ...action.payload };
+        state.userData = { ...state.userData, ...action.payload };
       })
-      .addCase(updateUser.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload;
-      })
-
-      // Delete user
       .addCase(deleteUser.fulfilled, (state, action) => {
         state.users = state.users.filter((user) => user.id !== action.payload);
       })
-      .addCase(deleteUser.rejected, (state, action) => {
-        state.error = action.payload;
-      });
+      .addMatcher(
+        (action) => action.type.endsWith("/pending"),
+        (state) => {
+          state.isLoading = true;
+          state.error = null;
+        }
+      )
+      .addMatcher(
+        (action) => action.type.endsWith("/rejected"),
+        (state, action) => {
+          state.isLoading = false;
+          state.error = action.payload;
+        }
+      );
   },
 });
 

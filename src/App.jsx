@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react"; // أضف هذه الاستيرادات
+import { lazy, Suspense } from "react";
 import "./App.css";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import AppLayout from "./Ui/AppLayout";
@@ -6,11 +6,16 @@ import Error from "./Ui/Error";
 import { store } from "../src/app/store";
 import { Provider } from "react-redux";
 import { ToastContainer } from "react-toastify";
-import AuthListener from "./Features/auth/AuthListener";
 import Home from "./Pages/Home";
+import ProtectedRoute from "./Components/Protectedroutes/ProtectedRoute";
+import AuthListener from "./Features/auth/AuthListener";
+import AuthWrapper from "./Components/Protectedroutes/AuthWrapper";
+import Loader from "./Ui/Loader";
+
 const JobDetailes = lazy(() => import("./Pages/JobDetailes"));
 const LoginForm = lazy(() => import("./Features/auth/LoginForm"));
 const Register = lazy(() => import("./Features/auth/Register"));
+const Dashboard = lazy(() => import("./AdminDashboard/Dashboard"));
 
 function App() {
   const jobs = [
@@ -119,9 +124,14 @@ function App() {
       ],
     },
   ];
+
   const router = createBrowserRouter([
     {
-      element: <AppLayout />,
+      element: (
+        <AuthWrapper>
+          <AppLayout />
+        </AuthWrapper>
+      ),
       errorElement: <Error />,
       children: [
         {
@@ -134,32 +144,28 @@ function App() {
         },
         {
           path: "/login",
-          element: (
-            <Suspense fallback={<div>Loading...</div>}>
-              <LoginForm />
-            </Suspense>
-          ),
+          element: <LoginForm />,
         },
         {
-          path: "/signup",
-          element: (
-            <Suspense fallback={<div>Loading...</div>}>
-              <Register />
-            </Suspense>
-          ),
+          path: "/register",
+          element: <Register />,
+        },
+        {
+          path: "/dashboard/*",
+          element: <Dashboard />,
         },
       ],
     },
   ]);
 
   return (
-    <>
-      <Provider store={store}>
+    <Provider store={store}>
+      <Suspense fallback={<Loader />}>
         <RouterProvider router={router} />
         <ToastContainer />
         <AuthListener />
-      </Provider>
-    </>
+      </Suspense>
+    </Provider>
   );
 }
 

@@ -8,14 +8,14 @@ import { Link } from "react-router-dom"; // Use Link from react-router-dom
 function Navbar() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { user, userDetails } = useSelector((state) => state.auth);
-  const isLoggedin = !!user; // Check if user is logged in
-
+  const { isAuthenticated, user, userData } = useSelector(
+    (state) => state.auth
+  );
   useEffect(() => {
-    if (user && !userDetails) {
+    if (user && !userData) {
       dispatch(fetchUserData());
     }
-  }, [dispatch, user, userDetails]);
+  }, [dispatch, user, userData]);
 
   const logOut = async () => {
     try {
@@ -39,14 +39,14 @@ function Navbar() {
         </Link>
         <ul className="flex space-x-4">
           <li>
-            {isLoggedin && (
+            {isAuthenticated ? (
               <span className="hover:text-violet-500">
-                Hi, {userDetails?.userName}
+                Hi, {userData?.userName}
               </span>
-            )}
+            ) : null}
           </li>
           <li>
-            {!isLoggedin ? (
+            {!isAuthenticated ? (
               <Link
                 to="/login"
                 className="text-MainColor hover:text-HoverColor"
