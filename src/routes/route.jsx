@@ -7,6 +7,8 @@ import Myjobs from "../Recruiter/Myjobs";
 import RecruiterAddJob from "../Recruiter/RecruiterAddJob";
 import EditJob from "../Recruiter/EditJob";
 import Profile from "../Components/UserProfile";
+import { element } from "prop-types";
+import ViewApplications from "../Recruiter/ViewApplications";
 
 const JobDetailes = lazy(() => import("../Components/JobDetailes"));
 const LoginForm = lazy(() => import("../Features/auth/LoginForm"));
@@ -86,6 +88,10 @@ const routes = [
                 <EditJob />
               </ProtectedRoute>
             ),
+          },
+          {
+            path: "/recruiter/applications/",
+            element: <ViewApplications />,
           },
         ],
       },

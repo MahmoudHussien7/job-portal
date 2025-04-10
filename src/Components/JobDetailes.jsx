@@ -1,13 +1,18 @@
-import { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux"; // إضافة useSelector
+// src/pages/JobDetailsPage.jsx
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { useParams } from "react-router-dom";
-import { fetchJobs } from "../app/Slices/jobSlice";
-import Loader from "../Ui/Loader";
+import { fetchJobs } from "../app/slices/jobSlice";
+import { submitApplication } from "../app/slices/applicationSlice";
+import Loader from "../ui/Loader";
+import UploadWidget from "../components/common/UploadWidget";
 
 const JobDetails = () => {
+  const [showApplyForm, setShowApplyForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [cvUrl, setCvUrl] = useState(null);
   const { id } = useParams();
   const dispatch = useDispatch();
-
   const { jobs, loading } = useSelector((state) => state.jobs);
 
   useEffect(() => {
@@ -15,7 +20,58 @@ const JobDetails = () => {
       dispatch(fetchJobs());
     }
   }, [dispatch, jobs.length]);
+
   const job = jobs.find((job) => job.id === id);
+
+  const handleUpload = (url) => {
+    setCvUrl(url);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!job) {
+      alert("Job information is missing.");
+      return;
+    }
+
+    if (!cvUrl) {
+      alert("Please upload your CV.");
+      return;
+    }
+
+    const form = e.target;
+    const fullName = form.fullName.value;
+    const email = form.email.value;
+    const coverLetter = form.coverLetter.value;
+
+    const applicantData = {
+      fullName,
+      email,
+      coverLetter,
+      cv: cvUrl,
+      appliedRole: job.title, // Add the job title as the applied role
+    };
+
+    const recruiterId = job.recruiterId;
+    const jobId = job.id;
+
+    setSubmitting(true);
+    dispatch(submitApplication({ jobId, recruiterId, applicantData }))
+      .unwrap()
+      .then(() => {
+        form.reset();
+        setCvUrl(null);
+        setShowApplyForm(false);
+      })
+      .catch((error) => {
+        console.error("Submission failed:", error);
+        alert("Failed to submit application. Please try again.");
+      })
+      .finally(() => {
+        setSubmitting(false);
+      });
+  };
 
   if (loading.fetch) {
     return (
@@ -28,15 +84,15 @@ const JobDetails = () => {
   if (!job) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <p className="text-xl text-red-600">Job not found</p>{" "}
+        <p className="text-xl text-red-600">Job not found</p>
       </div>
     );
   }
 
   return (
-    <div className=" mx-auto p-4 bg-white">
+    <div className="mx-auto p-4 bg-white">
       {/* Job Header Section */}
-      <div className="bg-blue-50  p-6 rounded-lg mb-6">
+      <div className="bg-blue-50 p-6 rounded-lg mb-6">
         <div className="flex items-start justify-between">
           <div className="flex gap-4">
             <div className="bg-white p-2 rounded shadow-sm">
@@ -51,23 +107,20 @@ const JobDetails = () => {
             </div>
             <div>
               <h1 className="text-xl font-bold text-gray-800 mb-1">
-                {job.title || "Job Title Unavailable"}{" "}
+                {job.title || "Job Title Unavailable"}
               </h1>
               <div className="flex flex-wrap gap-3 text-sm text-gray-600 mb-2">
-                <div className="flex items-center">
-                  <span>{job.location || "Location not provided"}</span>{" "}
-                </div>
-                <div className="flex items-center">
-                  <span>{job.category || "Not Specified"}</span>{" "}
-                </div>
-                <div className="flex items-center">
-                  <span>{job.level}</span>
-                </div>
+                <span>{job.location || "Location not provided"}</span>
+                <span>{job.category || "Not Specified"}</span>
+                <span>{job.level}</span>
               </div>
               <div className="text-xs text-gray-500">Posted 20 days ago</div>
             </div>
           </div>
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium">
+          <button
+            onClick={() => setShowApplyForm(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium"
+          >
             Apply Now
           </button>
         </div>
@@ -83,17 +136,15 @@ const JobDetails = () => {
         </div>
         <p className="text-gray-700 mb-4">
           {job.aboutjob || "Description not available"}
-        </p>{" "}
+        </p>
       </div>
 
       {/* Key Responsibilities Section */}
       <div className="mb-8">
         <h2 className="text-lg font-medium mb-3">Key responsibilities</h2>
         <ol className="list-decimal pl-5 space-y-2 text-gray-700">
-          {job.responsibilities && job.responsibilities.length > 0 ? (
-            job.responsibilities.map((responsibility, index) => (
-              <li key={index}>{responsibility}</li>
-            ))
+          {job.responsibilities?.length ? (
+            job.responsibilities.map((item, i) => <li key={i}>{item}</li>)
           ) : (
             <>
               <li>
@@ -110,10 +161,9 @@ const JobDetails = () => {
       <div className="mb-8">
         <h2 className="text-lg font-medium mb-3">Skills required</h2>
         <ol className="list-decimal pl-5 space-y-2 text-gray-700">
-          {job.requirements && job.requirements.length > 0 ? (
-            job.requirements.map((req, index) => <li key={index}>{req}</li>)
+          {job.requirements?.length ? (
+            job.requirements.map((item, i) => <li key={i}>{item}</li>)
           ) : (
-            // إضافة رسالة في حالة غياب المهارات المطلوبة
             <li>Required skills are not available</li>
           )}
         </ol>
@@ -121,10 +171,63 @@ const JobDetails = () => {
 
       {/* Apply Button */}
       <div className="pb-4">
-        <button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded font-medium">
+        <button
+          onClick={() => setShowApplyForm(true)}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium"
+        >
           Apply Now
         </button>
       </div>
+
+      {/* Modal for Application Form */}
+      {showApplyForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-lg relative shadow-lg">
+            <button
+              onClick={() => setShowApplyForm(false)}
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl"
+            >
+              ×
+            </button>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <h3 className="text-xl font-semibold mb-4 text-center">
+                Submit Your Application
+              </h3>
+              <input
+                type="text"
+                name="fullName"
+                required
+                placeholder="Full Name"
+                className="w-full p-2 border rounded"
+              />
+              <input
+                type="email"
+                name="email"
+                required
+                placeholder="Email"
+                className="w-full p-2 border rounded"
+              />
+              <textarea
+                name="coverLetter"
+                rows="4"
+                placeholder="Cover Letter (Optional)"
+                className="w-full p-2 border rounded"
+              />
+              <UploadWidget onUpload={handleUpload} />
+
+              <button
+                type="submit"
+                disabled={submitting || !cvUrl}
+                className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded w-full ${
+                  submitting || !cvUrl ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+              >
+                {submitting ? "Submitting..." : "Submit Application"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
