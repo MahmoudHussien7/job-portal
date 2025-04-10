@@ -1,6 +1,6 @@
 import { useSelector } from "react-redux";
 import { Navigate, useLocation } from "react-router-dom";
-import Loader from "../../Ui/Loader";
+import Loader from "../Ui/Loader";
 
 const publicRoutes = ["/", "/login", "/register"];
 

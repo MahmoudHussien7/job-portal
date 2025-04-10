@@ -1,9 +1,9 @@
 import React from "react";
 import Hero from "../Components/Hero";
 import TrustedCompanies from "../Components/TrustedCompanies";
-import SidebarFilter from "../Components/SiderBar";
-import JobList from "../Components/JobList";
-import Pagination from "../Components/Pagination";
+import SidebarFilter from "../Components//common/SiderBar";
+import JobList from "../Components/common/JobList";
+import Pagination from "../Components/common/Pagination";
 
 const HomePage = () => {
   return (

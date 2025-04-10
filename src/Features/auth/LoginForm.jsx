@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
-import { loginUser } from "../auth/authSlice";
+import { loginUser } from "../../app/Slices/authSlice";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import LoadingSpinner from "../../Ui/Loader";

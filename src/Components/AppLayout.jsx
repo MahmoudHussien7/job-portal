@@ -1,7 +1,7 @@
 import { useSelector } from "react-redux";
 import { useNavigation } from "react-router-dom";
-import Navbar from "../Components/Navbar";
-import Loader from "./Loader";
+import Navbar from "../Components/common/Navbar";
+import Loader from "../Ui/Loader";
 import { Outlet, Navigate } from "react-router-dom";
 function AppLayout() {
   const { isLoading } = useSelector((state) => state.auth);

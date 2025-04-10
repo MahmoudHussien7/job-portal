@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux"; // إضافة useSelector
 import { useParams } from "react-router-dom";
-import { fetchJobs } from "../features/jobs/jobSlice";
+import { fetchJobs } from "../app/Slices/jobSlice";
 import Loader from "../Ui/Loader";
 
 const JobDetails = () => {

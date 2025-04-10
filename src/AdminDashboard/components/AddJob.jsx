@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
-import { addjob } from "../../features/jobs/jobSlice";
+import { addjob } from "../../app/Slices/jobSlice";
 import { Navigate } from "react-router-dom";
 
 const AddJob = () => {

@@ -1,20 +1,17 @@
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchJobs } from "../../features/jobs/jobSlice";
+import { fetchJobs } from "../../app/Slices/jobSlice";
 import { Link } from "react-router-dom";
-import JobCard from "../../Components/JobCard";
+import JobCard from "../../Components/common/JobCard";
 
 const Jobs = () => {
   const { jobs, loading, error } = useSelector((state) => state.jobs);
   const dispatch = useDispatch();
 
   useEffect(() => {
-    try{
-
-    
+    try {
       dispatch(fetchJobs()); // Only dispatch if jobs are not already loaded and not currently loading
-    }
-    catch(error){
+    } catch (error) {
       console.log("Error fetching jobs:", error);
     }
   }, [dispatch, jobs.length, loading]);

@@ -1,10 +1,10 @@
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { registerUser } from "../auth/authSlice";
+import { registerUser } from "../../app/Slices/authSlice";
 import { toast } from "react-toastify";
 import { useEffect, useState } from "react";
-import PasswordStrengthMeter from "../../Components/PasswordStrenghtMeter";
+import PasswordStrengthMeter from "../../Components/common/PasswordStrenghtMeter";
 import LoadingSpinner from "../../Ui/Loader";
 
 const Register = () => {

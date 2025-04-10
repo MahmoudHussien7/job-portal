@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import JobCard from "./JobCard";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
-import { fetchJobs } from "../features/jobs/jobSlice";
+import { fetchJobs } from "../../app/Slices/jobSlice";
 
 export default function JobList() {
   //   {

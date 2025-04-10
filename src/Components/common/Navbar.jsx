@@ -1,9 +1,9 @@
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchUserData, logoutUser } from "../Features/auth/authSlice";
+import { fetchUserData, logoutUser } from "../../app/Slices/authSlice";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Link } from "react-router-dom"; // Use Link from react-router-dom
+import { Link } from "react-router-dom";
 
 function Navbar() {
   const dispatch = useDispatch();

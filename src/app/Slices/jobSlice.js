@@ -7,7 +7,7 @@ import {
   getDocs,
   updateDoc,
 } from "firebase/firestore";
-import { db } from "../../Firebase/Config";
+import { db } from "../../services/Firebase/Config";
 
 const fetchJobs = createAsyncThunk("jobs/fetchJobs", async (_, thunkAPI) => {
   try {

@@ -14,7 +14,7 @@ import {
   getDocs,
   deleteDoc,
 } from "firebase/firestore";
-import { auth, db } from "../../Firebase/Config";
+import { auth, db } from "../../services/Firebase/Config";
 import {
   getAuthCookie,
   removeAuthCookie,
