@@ -15,6 +15,11 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import { auth, db } from "../../Firebase/Config";
+import {
+  getAuthCookie,
+  removeAuthCookie,
+  setAuthCookie,
+} from "../../utils/Cookie";
 
 // --- Async Thunks ---
 export const registerUser = createAsyncThunk(
@@ -38,6 +43,10 @@ export const registerUser = createAsyncThunk(
         createdAt: new Date().toISOString(),
       };
       await setDoc(doc(db, "users", user.uid), userData);
+
+      // Save to cookie for persistence
+      setAuthCookie({ uid: user.uid, ...userData });
+
       return { firebaseUser: user, userData };
     } catch (error) {
       return rejectWithValue(error.message);
@@ -45,30 +54,6 @@ export const registerUser = createAsyncThunk(
   }
 );
 
-// export const loginUser = createAsyncThunk(
-//   "auth/loginUser",
-//   async ({ userEmail, password }, { rejectWithValue }) => {
-//     try {
-//       await setPersistence(auth, browserLocalPersistence);
-//       const userCredential = await signInWithEmailAndPassword(
-//         auth,
-//         userEmail,
-//         password
-//       );
-//       const user = userCredential.user;
-//       const userDoc = await getDoc(doc(db, "users", user.uid));
-
-//       if (!userDoc.exists()) {
-//         throw new Error("User data not found!");
-//       }
-
-//       const userData = userDoc.data();
-//       return { user, userData };
-//     } catch (error) {
-//       return rejectWithValue(error.message);
-//     }
-//   }
-// );
 export const loginUser = createAsyncThunk(
   "auth/loginUser",
   async ({ userEmail, password }, { rejectWithValue }) => {
@@ -81,8 +66,13 @@ export const loginUser = createAsyncThunk(
       );
       const user = userCredential.user;
       const userDoc = await getDoc(doc(db, "users", user.uid));
+
       if (!userDoc.exists()) throw new Error("User data not found!");
       const userData = userDoc.data();
+
+      // Save to cookie for persistence
+      setAuthCookie({ uid: user.uid, ...userData });
+
       return { firebaseUser: user, userData };
     } catch (error) {
       return rejectWithValue(error.message);
@@ -90,9 +80,18 @@ export const loginUser = createAsyncThunk(
   }
 );
 
-export const logoutUser = createAsyncThunk("auth/logoutUser", async () => {
-  await signOut(auth);
-});
+export const logoutUser = createAsyncThunk(
+  "auth/logoutUser",
+  async (_, { rejectWithValue }) => {
+    try {
+      await signOut(auth);
+      removeAuthCookie();
+      return null;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
 
 export const fetchUserData = createAsyncThunk(
   "auth/fetchUserData",
@@ -100,7 +99,12 @@ export const fetchUserData = createAsyncThunk(
     try {
       const userDoc = await getDoc(doc(db, "users", uid));
       if (!userDoc.exists()) throw new Error("User not found!");
-      return { userData: userDoc.data() };
+      const userData = userDoc.data();
+
+      // Update cookie with fresh data
+      setAuthCookie({ uid, ...userData });
+
+      return { firebaseUser: { uid }, userData };
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -127,6 +131,11 @@ export const updateUser = createAsyncThunk(
       if (!user) throw new Error("User not authenticated");
 
       await setDoc(doc(db, "users", user.uid), userData, { merge: true });
+
+      // Update cookie with new data
+      const currentCookie = getAuthCookie();
+      setAuthCookie({ ...currentCookie, ...userData });
+
       return userData;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -149,7 +158,7 @@ export const deleteUser = createAsyncThunk(
 // --- Slice ---
 const initialState = {
   user: null,
-  userData: null, // تم دمج userDetails و role هنا
+  userData: null,
   isLoading: true,
   isAuthenticated: false,
   error: null,
@@ -163,8 +172,9 @@ const authSlice = createSlice({
     setUser: (state, action) => {
       state.user = action.payload.firebaseUser;
       state.userData = action.payload.userData;
-      state.isAuthenticated = true;
+      state.isAuthenticated = !!action.payload.firebaseUser;
       state.isLoading = false;
+      state.error = null;
     },
     clearUser: (state) => {
       state.user = null;
@@ -172,52 +182,92 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.isLoading = false;
     },
+    setAuthLoading: (state, action) => {
+      state.isLoading = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
-      // معالجة الحالات العامة
-
-      // حالات محددة
+      // Register
+      .addCase(registerUser.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
       .addCase(registerUser.fulfilled, (state, action) => {
-        state.user = action.payload.user;
-        state.userData = action.payload.userData;
-        state.isAuthenticated = true;
-      })
-      .addCase(loginUser.fulfilled, (state, action) => {
-        state.user = action.payload.user;
-        state.userData = action.payload.userData || { role: "user" }; // قيمة افتراضية
-        state.isAuthenticated = true;
-      })
-      .addCase(fetchUserData.fulfilled, (state, action) => {
+        state.user = action.payload.firebaseUser;
         state.userData = action.payload.userData;
         state.isAuthenticated = true;
         state.isLoading = false;
+        state.error = null;
       })
+      .addCase(registerUser.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
+
+      // Login
+      .addCase(loginUser.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(loginUser.fulfilled, (state, action) => {
+        state.user = action.payload.firebaseUser;
+        state.userData = action.payload.userData;
+        state.isAuthenticated = true;
+        state.isLoading = false;
+        state.error = null;
+      })
+      .addCase(loginUser.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
+
+      // Logout
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.user = null;
+        state.userData = null;
+        state.isAuthenticated = false;
+        state.isLoading = false;
+        state.error = null;
+      })
+
+      // Fetch user data
+      .addCase(fetchUserData.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchUserData.fulfilled, (state, action) => {
+        state.user = action.payload.firebaseUser;
+        state.userData = action.payload.userData;
+        state.isAuthenticated = true;
+        state.isLoading = false;
+        state.error = null;
+      })
+      .addCase(fetchUserData.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+        state.isAuthenticated = false;
+        state.user = null;
+        state.userData = null;
+      })
+
+      // Fetch users list
       .addCase(fetchUsers.fulfilled, (state, action) => {
         state.users = action.payload;
+        state.isLoading = false;
       })
+
+      // Update user
       .addCase(updateUser.fulfilled, (state, action) => {
         state.userData = { ...state.userData, ...action.payload };
       })
+
+      // Delete user
       .addCase(deleteUser.fulfilled, (state, action) => {
         state.users = state.users.filter((user) => user.id !== action.payload);
-      })
-      .addMatcher(
-        (action) => action.type.endsWith("/pending"),
-        (state) => {
-          state.isLoading = true;
-          state.error = null;
-        }
-      )
-      .addMatcher(
-        (action) => action.type.endsWith("/rejected"),
-        (state, action) => {
-          state.isLoading = false;
-          state.error = action.payload;
-        }
-      );
+      });
   },
 });
 
-export const { setUser, clearUser } = authSlice.actions;
+export const { setUser, clearUser, setAuthLoading } = authSlice.actions;
 export default authSlice.reducer;

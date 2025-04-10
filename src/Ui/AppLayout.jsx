@@ -1,23 +1,26 @@
+import { useSelector } from "react-redux";
+import { useNavigation } from "react-router-dom";
 import Navbar from "../Components/Navbar";
 import Loader from "./Loader";
-import { Outlet, useNavigation } from "react-router-dom";
-
+import { Outlet, Navigate } from "react-router-dom";
 function AppLayout() {
+  const { isLoading } = useSelector((state) => state.auth);
   const navigation = useNavigation();
-  const isLoading = navigation.state === "loading";
+  const isNavigating = navigation.state === "loading";
+
+  // This should never happen due to Root check, but added as safety
+  if (isLoading) {
+    return <Loader />;
+  }
 
   return (
-    <div className="">
-      {isLoading && <Loader />}
-
+    <>
       <Navbar />
-
-      <div className="">
-        <main className=" mx-16 mt-10 mb-10">
-          <Outlet />
-        </main>
-      </div>
-    </div>
+      {isNavigating && <Loader />}
+      <main className="mx-16 mt-10 mb-10">
+        <Outlet />
+      </main>
+    </>
   );
 }
 
