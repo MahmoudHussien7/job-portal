@@ -56,6 +56,24 @@ const updatejob = createAsyncThunk(
     }
   }
 );
+
+// 🔄 New Thunk to Fetch Only Recruiter's Jobs
+const fetchRecruiterJobs = createAsyncThunk(
+  "jobs/fetchRecruiterJobs",
+  async (recruiterId, thunkAPI) => {
+    try {
+      const allJobs = await getDocs(collection(db, "jobs"));
+      const jobs = allJobs.docs
+        .map((doc) => ({ id: doc.id, ...doc.data() }))
+        .filter((job) => job.recruiterId === recruiterId); // Filtering right here
+
+      return jobs;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
 const initialState = {
   jobs: [],
   loading: {
@@ -127,9 +145,22 @@ const jobSlice = createSlice({
       .addCase(deletejob.rejected, (state, action) => {
         state.loading.delete = false;
         state.error = action.payload;
+      })
+      // Fetch recruiter-specific jobs
+      .addCase(fetchRecruiterJobs.pending, (state) => {
+        state.loading.fetch = true;
+        state.error = null;
+      })
+      .addCase(fetchRecruiterJobs.fulfilled, (state, action) => {
+        state.jobs = action.payload; // Only their jobs
+        state.loading.fetch = false;
+      })
+      .addCase(fetchRecruiterJobs.rejected, (state, action) => {
+        state.loading.fetch = false;
+        state.error = action.payload;
       });
   },
 });
 
 export default jobSlice.reducer;
-export { fetchJobs, addjob, deletejob, updatejob };
+export { fetchJobs, addjob, deletejob, updatejob, fetchRecruiterJobs };

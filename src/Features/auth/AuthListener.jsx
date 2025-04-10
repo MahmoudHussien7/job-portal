@@ -47,7 +47,7 @@ const AuthListener = () => {
         console.error("Auth state change error:", error);
         dispatch(clearUser());
       } finally {
-        dispatch(setAuthLoading(false));
+        dispatch(setAuthLoading(false)); // Ensure loading is set to false
       }
     });
 

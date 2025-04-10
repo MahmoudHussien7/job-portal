@@ -11,6 +11,7 @@ function Navbar() {
   const { isAuthenticated, user, userData } = useSelector(
     (state) => state.auth
   );
+
   useEffect(() => {
     if (user && !userData) {
       dispatch(fetchUserData());
@@ -40,9 +41,9 @@ function Navbar() {
         <ul className="flex space-x-4">
           <li>
             {isAuthenticated ? (
-              <span className="hover:text-violet-500">
+              <Link to="/profile" className="hover:text-violet-500">
                 Hi, {userData?.userName}
-              </span>
+              </Link>
             ) : null}
           </li>
           <li>
@@ -54,9 +55,17 @@ function Navbar() {
                 Login
               </Link>
             ) : (
-              <a href="#" onClick={logOut} className="hover:text-violet-500">
-                Logout
-              </a>
+              <>
+                {/* Display Dashboard link for recruiter */}
+                {userData?.role === "recruiter" && (
+                  <Link to="/recruiter/" className="hover:text-violet-500">
+                    Dashboard
+                  </Link>
+                )}
+                <a href="#" onClick={logOut} className="hover:text-violet-500">
+                  Logout
+                </a>
+              </>
             )}
           </li>
         </ul>

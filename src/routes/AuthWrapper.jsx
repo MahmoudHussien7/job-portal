@@ -30,14 +30,21 @@ const AuthWrapper = ({ children }) => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  // 👤 Regular users shouldn't access /dashboard
+  // Regular users shouldn't access /dashboard
   if (path.startsWith("/dashboard")) {
     return <Navigate to="/" replace />;
   }
 
-  // 🚫 Prevent logged-in users from accessing login/register
+  // Prevent logged-in users from accessing login/register
   if (["/login", "/register"].includes(path)) {
-    return <Navigate to="/" replace />;
+    // Redirect to home page or appropriate role-based path
+    const redirectPath =
+      userData?.role === "admin"
+        ? "/dashboard"
+        : userData?.role === "recruiter"
+        ? "/recruiter/myjobs"
+        : "/";
+    return <Navigate to={redirectPath} replace />;
   }
 
   return children;

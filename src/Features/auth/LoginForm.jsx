@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
 import { loginUser } from "../../app/Slices/authSlice";
@@ -9,6 +9,7 @@ import LoadingSpinner from "../../Ui/Loader";
 const Login = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { userData, isAuthenticated } = useSelector((state) => state.auth);
 
@@ -18,16 +19,17 @@ const Login = () => {
     formState: { errors, isValid },
   } = useForm({ mode: "onChange" });
 
-  // Redirect based on user role
+  // This effect handles route protection
   useEffect(() => {
-    if (!isAuthenticated) return;
-
-    const redirectPath = userData?.role === "admin" ? "/dashboard" : "/";
-    const welcomeMessage =
-      userData?.role === "admin" ? "Welcome back, Admin!" : "Login successful!";
-
-    toast.success(welcomeMessage, { position: "bottom-right" });
-    navigate(redirectPath);
+    if (isAuthenticated) {
+      const redirectPath =
+        userData?.role === "admin"
+          ? "/dashboard"
+          : userData?.role === "recruiter"
+          ? "/recruiter/myjobs"
+          : "/";
+      navigate(redirectPath);
+    }
   }, [isAuthenticated, userData, navigate]);
 
   const onSubmit = async ({ userEmail, password }) => {
@@ -36,25 +38,27 @@ const Login = () => {
     setIsSubmitting(true);
     try {
       await dispatch(loginUser({ userEmail, password })).unwrap();
+
+      // Show welcome message
+      const welcomeMessage =
+        userData?.role === "admin"
+          ? "Welcome back, Admin!"
+          : userData?.role === "recruiter"
+          ? `Hello, ${userData.userName}`
+          : "Login successful!";
+
+      toast.success(welcomeMessage, { position: "bottom-right" });
+
+      // Navigation will be handled by the effect hook
     } catch (error) {
-      const errorMsg = getAuthErrorMessage(error.code);
+      const errorMsg = error.code
+        ? `An error occurred: ${error.code}`
+        : "An unknown error occurred.";
       toast.error(errorMsg, { position: "bottom-right" });
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  const getAuthErrorMessage = (errorCode) => {
-    const errorMessages = {
-      "auth/user-not-found": "User not found. Please check your email.",
-      "auth/wrong-password": "Incorrect password. Please try again.",
-      "auth/too-many-requests":
-        "Account temporarily disabled due to too many failed attempts.",
-      default: "An unexpected error occurred. Please try again later.",
-    };
-    return errorMessages[errorCode] || errorMessages.default;
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-md bg-white rounded-lg shadow-md overflow-hidden">

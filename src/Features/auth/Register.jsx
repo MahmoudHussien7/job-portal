@@ -1,17 +1,16 @@
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import { registerUser } from "../../app/Slices/authSlice";
+import { useDispatch } from "react-redux";
+import { registerUser } from "../../app/slices/authSlice";
 import { toast } from "react-toastify";
-import { useEffect, useState } from "react";
-import PasswordStrengthMeter from "../../Components/common/PasswordStrenghtMeter";
-import LoadingSpinner from "../../Ui/Loader";
+import { useState } from "react";
+import PasswordStrengthMeter from "../../components/common/PasswordStrenghtMeter";
+import LoadingSpinner from "../../ui/Loader";
 
 const Register = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { isAuthenticated } = useSelector((state) => state.auth);
 
   const {
     register,
@@ -19,14 +18,6 @@ const Register = () => {
     formState: { errors, isValid },
     watch,
   } = useForm({ mode: "onChange" });
-
-  // Redirect after successful registration
-  useEffect(() => {
-    if (isAuthenticated) {
-      toast.success("Registration successful!", { position: "bottom-right" });
-      navigate("/");
-    }
-  }, [isAuthenticated, navigate]);
 
   const onSubmit = async (data) => {
     if (!isValid) return;
@@ -38,8 +29,17 @@ const Register = () => {
           userEmail: data.userEmail,
           password: data.password,
           userName: data.userName,
+          role: data.role,
         })
       ).unwrap();
+
+      // Show success message
+      toast.success("Registration successful!", { position: "bottom-right" });
+
+      // Redirect to appropriate page based on role
+      const redirectPath =
+        data.role === "recruiter" ? "/recruiter/myjobs" : "/";
+      navigate(redirectPath);
     } catch (error) {
       const errorMsg =
         error.code === "auth/email-already-in-use"
@@ -185,6 +185,35 @@ const Register = () => {
               {errors.confirmPassword && (
                 <p className="mt-1 text-sm text-red-600">
                   {errors.confirmPassword.message}
+                </p>
+              )}
+            </div>
+
+            {/* Role Selection Field */}
+            <div>
+              <label
+                htmlFor="role"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Role
+              </label>
+              <select
+                id="role"
+                {...register("role", {
+                  required: "Please select a role",
+                })}
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  errors.role ? "border-red-500" : "border-gray-300"
+                }`}
+                disabled={isSubmitting}
+              >
+                <option value="">Select a role</option>
+                <option value="user">User</option>
+                <option value="recruiter">Recruiter</option>
+              </select>
+              {errors.role && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.role.message}
                 </p>
               )}
             </div>
